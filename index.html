@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Execution Context</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .phases-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .phase {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 25px;
+            border: 3px solid #007bff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .phase:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 123, 255, 0.2);
+        }
+
+        .phase.active {
+            background: linear-gradient(145deg, #007bff, #0056b3);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .phase h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .phase.active h3 {
+            color: white;
+        }
+
+        .phase-icon {
+            width: 30px;
+            height: 30px;
+            background: #007bff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .execution-context {
+            background: #fff;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            border: 3px solid #28a745;
+            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.1);
+        }
+
+        .context-header {
+            text-align: center;
+            color: #28a745;
+            margin-bottom: 25px;
+            font-size: 1.6em;
+            font-weight: bold;
+        }
+
+        .context-components {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .component {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 6px solid #ffc107;
+            transition: all 0.3s ease;
+        }
+
+        .component:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(255, 193, 7, 0.2);
+        }
+
+        .component h4 {
+            color: #e67e22;
+            margin-bottom: 12px;
+            font-size: 1.2em;
+        }
+
+        .memory-content, .code-content {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            border: 2px dashed #dee2e6;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+        }
+
+        .call-stack {
+            background: linear-gradient(145deg, #dc3545, #c82333);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .stack-header {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .stack-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .stack-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border-left: 4px solid #fff;
+            transition: all 0.3s ease;
+        }
+
+        .stack-item:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(5px);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .btn {
+            background: linear-gradient(145deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .code-example {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .hoisting-demo {
+            background: linear-gradient(145deg, #6f42c1, #5a2d91);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .demo-header {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .phases-container,
+            .context-components {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 JavaScript Execution Context & Phases</h1>
+        
+        <div class="phases-container">
+            <div class="phase" id="creation-phase">
+                <h3>
+                    <div class="phase-icon">1</div>
+                    Creation Phase
+                </h3>
+                <p>JavaScript engine scans through the code and:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Allocates memory for variables (set to <code>undefined</code>)</li>
+                    <li>Stores function declarations completely</li>
+                    <li>Sets up the scope chain</li>
+                    <li>Determines <code>this</code> value</li>
+                </ul>
+            </div>
+            
+            <div class="phase" id="execution-phase">
+                <h3>
+                    <div class="phase-icon">2</div>
+                    Execution Phase
+                </h3>
+                <p>JavaScript engine executes the code:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Runs code line by line</li>
+                    <li>Assigns actual values to variables</li>
+                    <li>Executes function calls</li>
+                    <li>Creates new execution contexts for functions</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="execution-context">
+            <div class="context-header">📦 Execution Context Structure</div>
+            <div class="context-components">
+                <div class="component">
+                    <h4>🧠 Memory Component (Variable Environment)</h4>
+                    <p>Stores variables and functions as key-value pairs</p>
+                    <div class="memory-content" id="memory-content">
+                        <div>Variables: undefined initially</div>
+                        <div>Functions: stored completely</div>
+                    </div>
+                </div>
+                
+                <div class="component">
+                    <h4>⚡ Code Component (Thread of Execution)</h4>
+                    <p>Where code is executed line by line</p>
+                    <div class="code-content" id="code-content">
+                        <div>Current line being executed</div>
+                        <div>Sequential execution flow</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="call-stack">
+            <div class="stack-header">📚 Call Stack (LIFO - Last In, First Out)</div>
+            <div class="stack-items" id="stack-items">
+                <div class="stack-item">Global Execution Context</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="simulateCreation()">▶️ Simulate Creation Phase</button>
+            <button class="btn" onclick="simulateExecution()">⚡ Simulate Execution Phase</button>
+            <button class="btn" onclick="showHoisting()">🎯 Show Hoisting Demo</button>
+            <button class="btn" onclick="reset()">🔄 Reset</button>
+        </div>
+
+        <div class="code-example" id="code-example">
+            <div>// Example Code</div>
+            <div>console.log(x); // undefined (not error!)</div>
+            <div>console.log(foo); // [Function: foo]</div>
+            <div>&nbsp;</div>
+            <div>var x = 5;</div>
+            <div>&nbsp;</div>
+            <div>function foo() {</div>
+            <div>&nbsp;&nbsp;return "Hello World!";</div>
+            <div>}</div>
+            <div>&nbsp;</div>
+            <div>console.log(x); // 5</div>
+        </div>
+
+        <div class="hoisting-demo">
+            <div class="demo-header">🎯 Hoisting Explanation</div>
+            <p style="text-align: center; font-size: 1.1em; line-height: 1.6;">
+                Hoisting is the behavior where variable and function declarations are "moved" to the top of their scope during the <strong>Creation Phase</strong>. 
+                Variables are initialized with <code>undefined</code>, while function declarations are stored completely.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let currentPhase = null;
+        let stackCount = 1;
+
+        function simulateCreation() {
+            // Reset previous states
+            reset();
+            
+            // Highlight creation phase
+            document.getElementById('creation-phase').classList.add('active');
+            document.getElementById('execution-phase').classList.remove('active');
+            
+            // Update memory content
+            document.getElementById('memory-content').innerHTML = `
+                <div style="color: #dc3545; font-weight: bold;">Creation Phase:</div>
+                <div>x: undefined</div>
+                <div>foo: function foo() {...}</div>
+                <div style="color: #28a745; margin-top: 10px;">✅ Memory allocated</div>
+            `;
+            
+            // Update code content
+            document.getElementById('code-content').innerHTML = `
+                <div style="color: #dc3545; font-weight: bold;">Scanning phase:</div>
+                <div>🔍 Scanning for declarations...</div>
+                <div>📝 Setting up scope chain</div>
+                <div style="color: #28a745;">✅ Ready for execution</div>
+            `;
+            
+            // Highlight code example
+            document.getElementById('code-example').innerHTML = `
+                <div>// During Creation Phase:</div>
+                <div class="highlight">console.log(x); // undefined (hoisted!)</div>
+                <div class="highlight">console.log(foo); // [Function: foo] (hoisted!)</div>
+                <div>&nbsp;</div>
+                <div style="background: rgba(255, 255, 0, 0.2);">var x = 5; // x is allocated as undefined</div>
+                <div>&nbsp;</div>
+                <div style="background: rgba(0, 255, 0, 0.2);">function foo() { // Completely stored in memory</div>
+                <div style="background: rgba(0, 255, 0, 0.2);">&nbsp;&nbsp;return "Hello World!";</div>
+                <div style="background: rgba(0, 255, 0, 0.2);">}</div>
+                <div>&nbsp;</div>
+                <div>console.log(x); // Will be 5 after execution</div>
+            `;
+            
+            currentPhase = 'creation';
+        }
+
+        function simulateExecution() {
+            // Highlight execution phase
+            document.getElementById('execution-phase').classList.add('active');
+            document.getElementById('creation-phase').classList.remove('active');
+            
+            // Update memory content
+            document.getElementById('memory-content').innerHTML = `
+                <div style="color: #007bff; font-weight: bold;">Execution Phase:</div>
+                <div>x: 5 (assigned value)</div>
+                <div>foo: function foo() {...}</div>
+                <div style="color: #28a745; margin-top: 10px;">✅ Values assigned</div>
+            `;
+            
+            // Update code content
+            document.getElementById('code-content').innerHTML = `
+                <div style="color: #007bff; font-weight: bold;">Executing:</div>
+                <div>📍 Line by line execution</div>
+                <div>🔄 Assigning actual values</div>
+                <div style="color: #28a745;">✅ Code executed</div>
+            `;
+            
+            // Highlight code example
+            document.getElementById('code-example').innerHTML = `
+                <div>// During Execution Phase:</div>
+                <div style="background: rgba(0, 255, 0, 0.2);">console.log(x); // undefined (from creation phase)</div>
+                <div style="background: rgba(0, 255, 0, 0.2);">console.log(foo); // [Function: foo]</div>
+                <div>&nbsp;</div>
+                <div class="highlight">var x = 5; // Now x gets the value 5</div>
+                <div>&nbsp;</div>
+                <div>function foo() {</div>
+                <div>&nbsp;&nbsp;return "Hello World!";</div>
+                <div>}</div>
+                <div>&nbsp;</div>
+                <div class="highlight">console.log(x); // 5 (actual value)</div>
+            `;
+            
+            currentPhase = 'execution';
+        }
+
+        function showHoisting() {
+            // Add to call stack simulation
+            addToStack('Function Execution Context');
+            
+            document.getElementById('code-example').innerHTML = `
+                <div style="color: #ffc107; font-weight: bold;">// Hoisting Demo - How it appears vs How it works:</div>
+                <div>&nbsp;</div>
+                <div style="color: #dc3545;">// How you write:</div>
+                <div>console.log(myVar); // undefined</div>
+                <div>console.log(myFunc()); // "Hello!"</div>
+                <div>&nbsp;</div>
+                <div>var myVar = "I'm a variable";</div>
+                <div>function myFunc() { return "Hello!"; }</div>
+                <div>&nbsp;</div>
+                <div style="color: #28a745;">// How JavaScript sees it (conceptually):</div>
+                <div>var myVar = undefined; // Hoisted</div>
+                <div>function myFunc() { return "Hello!"; } // Hoisted</div>
+                <div>&nbsp;</div>
+                <div>console.log(myVar); // undefined</div>
+                <div>console.log(myFunc()); // "Hello!"</div>
+                <div>&nbsp;</div>
+                <div>myVar = "I'm a variable"; // Assignment happens here</div>
+            `;
+        }
+
+        function addToStack(context) {
+            const stackItems = document.getElementById('stack-items');
+            const newItem = document.createElement('div');
+            newItem.className = 'stack-item';
+            newItem.textContent = context;
+            newItem.style.animation = 'slideIn 0.3s ease';
+            stackItems.appendChild(newItem);
+            stackCount++;
+        }
+
+        function reset() {
+            // Remove active classes
+            document.getElementById('creation-phase').classList.remove('active');
+            document.getElementById('execution-phase').classList.remove('active');
+            
+            // Reset memory content
+            document.getElementById('memory-content').innerHTML = `
+                <div>Variables: undefined initially</div>
+                <div>Functions: stored completely</div>
+            `;
+            
+            // Reset code content
+            document.getElementById('code-content').innerHTML = `
+                <div>Current line being executed</div>
+                <div>Sequential execution flow</div>
+            `;
+            
+            // Reset call stack
+            document.getElementById('stack-items').innerHTML = `
+                <div class="stack-item">Global Execution Context</div>
+            `;
+            
+            // Reset code example
+            document.getElementById('code-example').innerHTML = `
+                <div>// Example Code</div>
+                <div>console.log(x); // undefined (not error!)</div>
+                <div>console.log(foo); // [Function: foo]</div>
+                <div>&nbsp;</div>
+                <div>var x = 5;</div>
+                <div>&nbsp;</div>
+                <div>function foo() {</div>
+                <div>&nbsp;&nbsp;return "Hello World!";</div>
+                <div>}</div>
+                <div>&nbsp;</div>
+                <div>console.log(x); // 5</div>
+            `;
+            
+            stackCount = 1;
+            currentPhase = null;
+        }
+
+        // Add click handlers for phases
+        document.getElementById('creation-phase').addEventListener('click', simulateCreation);
+        document.getElementById('execution-phase').addEventListener('click', simulateExecution);
+
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
